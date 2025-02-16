@@ -40,6 +40,41 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+// Database status route
+app.get('/database_status', async (req, res) => {
+  try {
+    // Check connection state
+    const state = mongoose.connection.readyState;
+    const state_messages = {
+      0: 'Disconnected',
+      1: 'Connected',
+      2: 'Connecting',
+      3: 'Disconnecting'
+    };
+
+    // Try querying a collection to verify database operation
+    const user_count = await mongoose.models.User.countDocuments();
+
+    res.status(200).json({
+      status: 'ok',
+      database: {
+        state: state_messages[state],
+        state_code: state,
+        user_count: user_count
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: error.message
+    });
+  }
+});
+
+
+
 // Import and use routes (placeholder for future route integration)
 // const userRoutes = require('./routes/userRoutes');
 // const challengeRoutes = require('./routes/challengeRoutes');
@@ -70,7 +105,7 @@ app.use((err, req, res, next) => {
 });
 
 // Server configuration
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Only create server if file is run directly (not imported)
 if (require.main === module) {

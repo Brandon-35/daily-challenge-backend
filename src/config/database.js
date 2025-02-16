@@ -5,59 +5,84 @@ const connect_db = async () => {
   try {
     // MongoDB connection options
     const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true,
-      useFindAndModify: false
+      serverSelectionTimeoutMS: 5000,   // Timeout kết nối
+      socketTimeoutMS: 45000,           // Timeout socket
+      family: 4                         // Sử dụng IPv4
     };
 
     // Attempt connection
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
-    // Log successful connection
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-    console.log(`Database Name: ${conn.connection.db.databaseName}`);
+    // Logging kết nối
+    console.log('==================================');
+    console.log('🚀 MongoDB Connection Established');
+    console.log(`• Host: ${conn.connection.host}`);
+    console.log(`• Database: ${conn.connection.db.databaseName}`);
+    console.log(`• Connection State: Connected`);
+    console.log('==================================');
 
     // Handle errors after initial connection
     mongoose.connection.on('error', err => {
-      console.error('MongoDB connection error:', err);
-      // Optional: Implement reconnection logic or alert system
+      console.error('❌ MongoDB Connection Error:', err);
     });
 
     // Handle disconnection events
     mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
-      // Optional: Attempt to reconnect
+      console.log('⚠️ MongoDB Disconnected');
     });
 
     // Handle reconnection
     mongoose.connection.on('reconnected', () => {
-      console.log('MongoDB reconnected');
+      console.log('✅ MongoDB Reconnected');
+    });
+
+    // Handle connection monitoring
+    mongoose.connection.on('connecting', () => {
+      console.log('🔄 Attempting to connect to MongoDB...');
     });
 
     // Handle process termination
     process.on('SIGINT', async () => {
       try {
         await mongoose.connection.close();
-        console.log('MongoDB connection closed through app termination');
+        console.log('🔌 MongoDB Connection Closed');
         process.exit(0);
       } catch (error) {
-        console.error('Error closing MongoDB connection:', error);
+        console.error('❌ Error Closing MongoDB Connection:', error);
         process.exit(1);
       }
     });
 
-    // Optional: Register models (if needed)
-    require('../models/User');
-    require('../models/Challenge');
-    require('../models/Log');
-    require('../models/Achievement');
+    // Register models
+    const models = [
+      'User',
+      'Challenge', 
+      'Log', 
+      'Achievement'
+    ];
+
+    models.forEach(model => {
+      try {
+        require(`../models/${model}`);
+        console.log(`✓ Registered Model: ${model}`);
+      } catch (error) {
+        console.error(`❌ Failed to Register Model: ${model}`, error);
+      }
+    });
 
     return conn;
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
+    console.error('❌ MongoDB Connection Failed:', error);
     
-    // Implement retry mechanism or exit
+    // Detailed error logging
+    if (error.name === 'MongoError') {
+      console.log('Possible Causes:');
+      console.log('- Database server not running');
+      console.log('- Incorrect connection string');
+      console.log('- Network issues');
+    }
+
+    // Exit strategy
     if (process.env.NODE_ENV !== 'test') {
       process.exit(1);
     }

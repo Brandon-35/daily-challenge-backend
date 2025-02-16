@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "test_database": "node src/test_database_connection.js"
   },
   "keywords": [],
   "author": "",
