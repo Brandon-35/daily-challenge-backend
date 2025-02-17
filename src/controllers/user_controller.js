@@ -50,19 +50,46 @@ const user_controller = {
   // User login
   async login(req, res) {
     try {
-      const { login, password } = req.body;
-
-      // Tìm user bằng email hoặc username
-      const user = await User.find_by_credentials(login);
+      const { email, password } = req.body;
       
-      if (!user || !(await user.compare_password(password))) {
+      // Validate input
+      if (!email) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email is required'
+        });
+      }
+
+      if (!password) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Password is required'
+        });
+      }
+
+      const user = await User.findOne({ 
+        email: email.toLowerCase(),
+        is_active: true  // Only allow active users to login
+      });
+      
+      if (!user) {
         return res.status(401).json({
           status: 'error',
           message: 'Invalid login credentials'
         });
       }
 
-      // Tạo token
+      // Compare password using the plain text password
+      const is_valid_password = await user.compare_password(password);
+      console.log(password,is_valid_password);
+      
+      if (!is_valid_password) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Invalid login credentials'
+        });
+      }
+
       const token = jwt.sign(
         { user_id: user._id },
         process.env.JWT_SECRET,
@@ -143,6 +170,174 @@ const user_controller = {
       res.json({ message: 'Password changed successfully' });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Create User (Admin only)
+  async create_user(req, res) {
+    try {
+      const { username, email, password, first_name, last_name, role } = req.body;
+      
+      const user = new User({
+        username,
+        email,
+        password,
+        first_name,
+        last_name,
+        role: role || 'user'
+      });
+
+      await user.save();
+
+      res.status(201).json({
+        status: 'success',
+        message: 'User created successfully',
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          capabilities: user.capabilities
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Get All Users (Admin only)
+  async get_all_users(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const search = req.query.search || '';
+      const role = req.query.role;
+
+      let query = {};
+      
+      // Search by username, email, or name
+      if (search) {
+        query.$or = [
+          { username: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') },
+          { first_name: new RegExp(search, 'i') },
+          { last_name: new RegExp(search, 'i') }
+        ];
+      }
+
+      // Filter by role
+      if (role) {
+        query.role = role;
+      }
+
+      const total = await User.countDocuments(query);
+      const users = await User.find(query)
+        .select('-password')
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+
+      res.json({
+        status: 'success',
+        data: {
+          users,
+          pagination: {
+            current_page: page,
+            total_pages: Math.ceil(total / limit),
+            total_items: total,
+            per_page: limit
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Get Single User
+  async get_user(req, res) {
+    try {
+      const user = await User.findById(req.params.id).select('-password');
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        data: { user }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Update User
+  async update_user(req, res) {
+    try {
+      const updates = { ...req.body };
+      delete updates.password; // Don't allow password update through this route
+
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        updates,
+        { new: true, runValidators: true }
+      ).select('-password');
+
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'User updated successfully',
+        data: { user }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Delete User
+  async delete_user(req, res) {
+    try {
+      const user = await User.findByIdAndDelete(req.params.id);
+      
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'User deleted successfully'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
     }
   }
 };

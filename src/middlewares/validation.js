@@ -21,7 +21,12 @@ const user_validation = {
       .notEmpty().withMessage('Email is required')
       .isEmail().withMessage('Invalid email format')
       .custom(async (value) => {
-        const user = await User.findOne({ email: value.toLowerCase() });
+        if (!value) {
+          throw new Error('Email is required');
+        }
+        const user = await User.findOne({ 
+          email: value.toLowerCase() 
+        });
         if (user) {
           throw new Error('Email already exists');
         }
