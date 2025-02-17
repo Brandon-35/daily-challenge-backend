@@ -1,24 +1,19 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const { validate_user } = require('../middlewares/validation');
 
 const user_controller = {
   // Register new user
   async register(req, res) {
     try {
-      const { email, password, full_name } = req.body;
+      const { username, email, password, first_name, last_name } = req.body;
       
-      // Check existing email
-      const existing_user = await User.findOne({ email });
-      if (existing_user) {
-        return res.status(400).json({ message: 'Email already exists' });
-      }
-
       // Create new user
       const user = new User({
+        username,
         email,
         password,
-        full_name
+        first_name,
+        last_name
       });
 
       await user.save();
@@ -31,38 +26,43 @@ const user_controller = {
       );
 
       res.status(201).json({
+        status: 'success',
         message: 'Registration successful',
         token,
         user: {
           id: user._id,
+          username: user.username,
           email: user.email,
-          full_name: user.full_name,
-          role: user.role
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          capabilities: user.capabilities
         }
       });
     } catch (error) {
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
     }
   },
 
   // User login
   async login(req, res) {
     try {
-      const { email, password } = req.body;
+      const { login, password } = req.body;
 
-      // Find user by email
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid email or password' });
+      // Tìm user bằng email hoặc username
+      const user = await User.find_by_credentials(login);
+      
+      if (!user || !(await user.compare_password(password))) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Invalid login credentials'
+        });
       }
 
-      // Check password
-      const is_match = await user.compare_password(password);
-      if (!is_match) {
-        return res.status(401).json({ message: 'Invalid email or password' });
-      }
-
-      // Generate token
+      // Tạo token
       const token = jwt.sign(
         { user_id: user._id },
         process.env.JWT_SECRET,
@@ -70,17 +70,24 @@ const user_controller = {
       );
 
       res.json({
+        status: 'success',
         message: 'Login successful',
         token,
         user: {
           id: user._id,
+          username: user.username,
           email: user.email,
-          full_name: user.full_name,
-          role: user.role
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          capabilities: user.capabilities
         }
       });
     } catch (error) {
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
     }
   },
 

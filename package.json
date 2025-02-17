@@ -6,7 +6,8 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "seed": "node src/seed.js",
-    "test_database": "node src/test_database_connection.js"
+    "test_database": "node src/test_database_connection.js",
+    "check_db": "node scripts/check_database.js"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +22,8 @@
     "helmet": "^8.0.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.10.1"
+    "mongoose": "^8.10.1",
+    "express-validator": "^7.0.1"
   },
   "devDependencies": {
     "morgan": "^1.10.0",

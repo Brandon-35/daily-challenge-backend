@@ -5,7 +5,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const connect_db = require('./config/database');
-const user_routes = require('./routes/userRoutes');
+const user_routes = require('./routes/user_routes');
 
 const app = express();
 
@@ -25,8 +25,8 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Optional: Rate limiting middleware
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({
+const rate_limit = require('express-rate-limit');
+const limiter = rate_limit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
@@ -45,6 +45,9 @@ app.get('/health', (req, res) => {
 // Database status route
 app.get('/database_status', async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const User = require('./models/User');
+    
     // Check connection state
     const state = mongoose.connection.readyState;
     const state_messages = {
@@ -54,15 +57,17 @@ app.get('/database_status', async (req, res) => {
       3: 'Disconnecting'
     };
 
-    // Try querying a collection to verify database operation
-    const user_count = await mongoose.models.User.countDocuments();
+    // Get all users (có thể giới hạn số lượng để tránh quá tải)
+    const users = await User.find({}, '-password').limit(10);
+    const user_count = await User.countDocuments();
 
     res.status(200).json({
       status: 'ok',
       database: {
         state: state_messages[state],
         state_code: state,
-        user_count: user_count
+        user_count: user_count,
+        recent_users: users
       }
     });
   } catch (error) {
