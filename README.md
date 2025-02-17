@@ -9,15 +9,21 @@ backend/
 ├── config/
 │   └── database.js             # MongoDB connection configuration
 ├── controllers/                # Business logic for handling requests
+│   └── userController.js
 ├── middlewares/                # Express middleware for authentication, validation
+│   ├── auth.js
+│   └── validation.js
 ├── models/                     # Mongoose data models
 │   ├── Achievement.js          # Achievement tracking model
 │   ├── Challenge.js            # Challenge management model
 │   ├── Log.js                  # Activity logging model
 │   └── User.js                 # User authentication and profile model
 ├── routes/                     # API route definitions
+│   └── userRoutes.js
 ├── services/                   # External service integrations
 ├── utils/                      # Utility functions and helpers
+│   ├── jwt.js
+│   └── password.js
 └── seed.js                     # Database seeding script
 ```
 
@@ -124,4 +130,3 @@ backend/
 
 ## 👥 Contributors
 [List of Contributors]
-```

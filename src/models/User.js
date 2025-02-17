@@ -1,100 +1,53 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        minlength: 3,
-        maxlength: 30
-    },
+const user_schema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
         unique: true,
         trim: true,
-        lowercase: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+        lowercase: true
     },
     password: {
         type: String,
         required: true,
         minlength: 6
     },
-    profile: {
-        name: {
-            type: String,
-            trim: true
-        },
-        avatar: {
-            type: String,
-            default: 'default-avatar.png'
-        },
-        bio: {
-            type: String,
-            maxlength: 500
-        }
+    full_name: {
+        type: String,
+        required: true,
+        trim: true
     },
-    settings: {
-        theme: {
-            type: String,
-            enum: ['light', 'dark'],
-            default: 'light'
-        },
-        notifications: {
-            type: Boolean,
-            default: true
-        }
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
     },
-    stats: {
-        totalChallenges: {
-            type: Number,
-            default: 0
-        },
-        completedChallenges: {
-            type: Number,
-            default: 0
-        },
-        totalPoints: {
-            type: Number,
-            default: 0
-        }
+    avatar: {
+        type: String,
+        default: null
     },
-    challenges: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Challenge'
-    }],
-    logs: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Log'
-    }],
-    achievements: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Achievement'
-    }]
+    is_active: {
+        type: Boolean,
+        default: true
+    }
 }, {
     timestamps: true
 });
 
 // Hash password before saving
-UserSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
+user_schema.pre('save', async function(next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
     }
+    next();
 });
 
 // Method to check password
-UserSchema.methods.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+user_schema.methods.compare_password = async function(candidate_password) {
+    return bcrypt.compare(candidate_password, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', user_schema);
+module.exports = User;

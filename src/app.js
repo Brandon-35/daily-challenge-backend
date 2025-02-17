@@ -5,6 +5,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const connect_db = require('./config/database');
+const user_routes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -16,7 +17,8 @@ app.use(helmet()); // Adds security headers
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*', // Configure allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(morgan('dev')); // Logging
 app.use(express.json()); // Parse JSON bodies
@@ -39,7 +41,6 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV
   });
 });
-
 
 // Database status route
 app.get('/database_status', async (req, res) => {
@@ -73,13 +74,8 @@ app.get('/database_status', async (req, res) => {
   }
 });
 
-
-
-// Import and use routes (placeholder for future route integration)
-// const userRoutes = require('./routes/userRoutes');
-// const challengeRoutes = require('./routes/challengeRoutes');
-// app.use('/api/users', userRoutes);
-// app.use('/api/challenges', challengeRoutes);
+// Routes
+app.use('/api/users', user_routes);
 
 // 404 Not Found middleware
 app.use((req, res, next) => {
@@ -104,24 +100,41 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server configuration
-const PORT = process.env.PORT || 5001;
+// Function to find available port
+const find_available_port = (start_port) => {
+  return new Promise((resolve, reject) => {
+    const server = require('http').createServer();
+    
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(find_available_port(start_port + 1));
+      } else {
+        reject(err);
+      }
+    });
 
-// Only create server if file is run directly (not imported)
-if (require.main === module) {
-  const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
-
-  // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-      console.log('HTTP server closed');
-      process.exit(0);
+    server.listen(start_port, () => {
+      server.close(() => {
+        resolve(start_port);
+      });
     });
   });
-}
+};
+
+// Start server with port finding
+const start_server = async () => {
+  try {
+    const port = await find_available_port(process.env.PORT || 3000);
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Error starting server:', error);
+    process.exit(1);
+  }
+};
+
+start_server();
 
 module.exports = app;
