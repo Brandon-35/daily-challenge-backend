@@ -10,6 +10,14 @@ const check_role = (allowed_roles, required_capability = null) => {
     }
 
     const user = await User.findById(req.user.user_id);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
     const user_role = user.role;
 
     if (!allowed_roles.includes(user_role)) {
@@ -30,5 +38,4 @@ const check_role = (allowed_roles, required_capability = null) => {
   };
 };
 
-module.exports = { check_role }; 
 module.exports = { check_role }; 
