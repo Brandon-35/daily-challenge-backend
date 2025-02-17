@@ -1,17 +1,17 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Định nghĩa các permission/capabilities
+// Updated capabilities with 'can_' prefix
 const CAPABILITIES = {
-  CREATE: 'create',
-  READ: 'read',
-  UPDATE: 'update',
-  DELETE: 'delete',
-  MANAGE_USERS: 'manage_users',
-  ADMIN_PANEL: 'admin_panel'
+  CREATE: 'can_create',
+  READ: 'can_read',
+  UPDATE: 'can_update',
+  DELETE: 'can_delete',
+  MANAGE_USERS: 'can_manage_users',
+  ADMIN_PANEL: 'can_access_admin'
 };
 
-// Định nghĩa role và capabilities tương ứng
+// Updated role capabilities mapping
 const ROLE_CAPABILITIES = {
   user: [CAPABILITIES.READ],
   editor: [CAPABILITIES.CREATE, CAPABILITIES.READ, CAPABILITIES.UPDATE],

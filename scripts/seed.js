@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 const User = require('../src/models/User');
+const bcrypt = require('bcryptjs');
 
 async function seed_database() {
   try {
@@ -12,60 +13,69 @@ async function seed_database() {
     await User.deleteMany({});
     console.log('🧹 Cleared existing data');
 
+    // Use the predefined capabilities and role mappings from User model
+    const { CAPABILITIES, ROLE_CAPABILITIES } = User;
+    
     // Create sample users with different roles
     const users = await User.insertMany([
       {
         username: 'admin_user',
         email: 'admin@example.com',
-        password: 'Admin@123',
+        password: await bcrypt.hash('Admin@123', 10),
         first_name: 'Admin',
         last_name: 'User',
         role: 'admin',
+        capabilities: ROLE_CAPABILITIES.admin,
         is_active: true
       },
       {
         username: 'moderator_user',
         email: 'moderator@example.com',
-        password: 'Mod@123',
+        password: await bcrypt.hash('Mod@123', 10),
         first_name: 'Moderator',
         last_name: 'User',
         role: 'moderator',
+        capabilities: ROLE_CAPABILITIES.moderator,
         is_active: true
       },
       {
         username: 'editor_user',
         email: 'editor@example.com',
-        password: 'Editor@123',
+        password: await bcrypt.hash('Editor@123', 10),
         first_name: 'Editor',
         last_name: 'User',
         role: 'editor',
+        capabilities: ROLE_CAPABILITIES.editor,
         is_active: true
       },
       {
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'User@123',
+        password: await bcrypt.hash('User@123', 10),
         first_name: 'John',
         last_name: 'Doe',
         role: 'user',
+        capabilities: ROLE_CAPABILITIES.user,
         is_active: true
       },
       {
         username: 'jane_smith',
         email: 'jane@example.com',
-        password: 'User@123',
+        password: await bcrypt.hash('User@123', 10),
         first_name: 'Jane',
         last_name: 'Smith',
         role: 'user',
+        capabilities: ROLE_CAPABILITIES.user,
         is_active: true
       },
       {
         username: 'inactive_user',
         email: 'inactive@example.com',
-        password: 'User@123',
+        password: await bcrypt.hash('User@123', 10),
         first_name: 'Inactive',
         last_name: 'User',
         role: 'user',
+        capabilities: ROLE_CAPABILITIES.user,
         is_active: false
       }
     ]);
