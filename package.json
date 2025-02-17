@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed": "node src/seed.js",
+    "seed": "node scripts/seed.js",
     "test_database": "node src/test_database_connection.js",
     "check_db": "node scripts/check_database.js"
   },
