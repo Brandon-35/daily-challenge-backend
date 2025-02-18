@@ -133,6 +133,71 @@ const social_controller = {
                 message: error.message
             });
         }
+    },
+
+    // Add unfollow_user method
+    async unfollow_user(req, res) {
+        try {
+            const follower_id = req.user.user_id;
+            const following_id = req.params.user_id;
+
+            await Follow.findOneAndDelete({
+                follower: follower_id,
+                following: following_id
+            });
+
+            // Update user stats
+            await User.findByIdAndUpdate(follower_id, {
+                $inc: { 'social_stats.following_count': -1 }
+            });
+            await User.findByIdAndUpdate(following_id, {
+                $inc: { 'social_stats.followers_count': -1 }
+            });
+
+            res.json({
+                status: 'success',
+                message: 'Successfully unfollowed user'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Add delete_activity method
+    async delete_activity(req, res) {
+        try {
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            // Check ownership
+            if (activity.user.toString() !== req.user.user_id) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Not authorized to delete this activity'
+                });
+            }
+
+            await Activity.findByIdAndDelete(req.params.id);
+
+            res.json({
+                status: 'success',
+                message: 'Activity deleted successfully'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
     }
 
     // ... other controller functions
