@@ -72,7 +72,24 @@ const challengeSchema = new mongoose.Schema({
     points: {
         type: Number,
         required: true,
-        min: 0
+        min: 1
+    },
+    average_completion_time: {
+        type: Number,
+        default: 0
+    },
+    difficulty_multiplier: {
+        type: Number,
+        default: 1,
+        enum: [1, 1.5, 2] // easy, medium, hard
+    },
+    first_solve_bonus: {
+        type: Number,
+        default: 10
+    },
+    speed_bonus_threshold: {
+        type: Number,
+        default: 1000 // milliseconds
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -96,7 +113,46 @@ const challengeSchema = new mongoose.Schema({
     is_active: {
         type: Boolean,
         default: true
-    }
+    },
+    submissions: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        code: String,
+        status: {
+            type: String,
+            enum: ['pending', 'accepted', 'rejected'],
+            default: 'pending'
+        },
+        feedback: String,
+        submitted_at: {
+            type: Date,
+            default: Date.now
+        },
+        execution_time: Number,
+        memory_usage: Number
+    }],
+    test_cases: [{
+        input: String,
+        expected_output: String,
+        is_hidden: {
+            type: Boolean,
+            default: false
+        }
+    }],
+    tags: [{
+        type: String,
+        enum: ['Arrays', 'Strings', 'LinkedList', 'Trees', 'Graphs', 'DP', 'Sorting', 'Searching']
+    }],
+    skill_level: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced', 'expert']
+    },
+    prerequisites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Challenge'
+    }]
 }, {
     timestamps: true
 });
