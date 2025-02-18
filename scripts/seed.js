@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const Challenge = require('../src/models/Challenge');
 const Log = require('../src/models/Log');
 const Achievement = require('../src/models/Achievement');
+const Badge = require('../src/models/Badge');
 
 async function seed_database() {
   try {
@@ -263,6 +264,56 @@ async function seed_database() {
         category: achievement.category,
         points: achievement.points,
         rarity: achievement.rarity
+    })));
+
+    // Add after achievements seeding
+    console.log('🎖️ Creating sample badges...');
+
+    const badges = await Badge.insertMany([
+        {
+            name: 'Algorithm Master',
+            description: 'Complete all algorithm challenges',
+            icon: '/icons/algorithm-master.png',
+            category: 'skill',
+            tier: 'gold',
+            requirements: {
+                achievement_ids: [achievements[0]._id, achievements[1]._id],
+                challenges_required: 5
+            },
+            bonus_points: 100
+        },
+        {
+            name: 'Streak Champion',
+            description: 'Maintain a perfect streak for 30 days',
+            icon: '/icons/streak-champion.png',
+            category: 'achievement',
+            tier: 'platinum',
+            requirements: {
+                points_required: 1000,
+                challenges_required: 30
+            },
+            bonus_points: 200
+        },
+        {
+            name: 'Community Hero',
+            description: 'Help others and contribute to the community',
+            icon: '/icons/community-hero.png',
+            category: 'community',
+            tier: 'diamond',
+            requirements: {
+                points_required: 5000,
+                achievement_ids: [achievements[2]._id]
+            },
+            bonus_points: 500
+        }
+    ]);
+
+    console.log('\n📊 Seeded Badges:');
+    console.table(badges.map(badge => ({
+        name: badge.name,
+        category: badge.category,
+        tier: badge.tier,
+        bonus_points: badge.bonus_points
     })));
 
     await mongoose.disconnect();

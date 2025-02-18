@@ -45,7 +45,29 @@ const achievement_schema = new mongoose.Schema({
     is_active: {
         type: Boolean,
         default: true
-    }
+    },
+    related_badges: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Badge'
+    }],
+    unlock_requirements: {
+        previous_achievements: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Achievement'
+        }],
+        level_required: {
+            type: Number,
+            default: 0
+        }
+    },
+    tier_progress: [{
+        tier: {
+            type: String,
+            enum: ['bronze', 'silver', 'gold', 'platinum', 'diamond']
+        },
+        threshold: Number,
+        bonus_points: Number
+    }]
 }, {
     timestamps: true
 });

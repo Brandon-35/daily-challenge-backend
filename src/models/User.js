@@ -70,7 +70,40 @@ const user_schema = new mongoose.Schema({
     is_active: {
         type: Boolean,
         default: true
-    }
+    },
+    completed_challenges: [{
+        challenge: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Challenge'
+        },
+        completed_at: Date,
+        score: Number
+    }],
+    achievements: [{
+        title: String,
+        description: String,
+        earned_at: Date,
+        badge: String // URL to badge image
+    }],
+    statistics: {
+        total_points: { type: Number, default: 0 },
+        challenges_completed: { type: Number, default: 0 },
+        success_rate: { type: Number, default: 0 },
+        current_streak: { type: Number, default: 0 },
+        longest_streak: { type: Number, default: 0 }
+    },
+    badges: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Badge'
+    }],
+    badge_progress: [{
+        badge: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Badge'
+        },
+        progress: Number,
+        unlocked_at: Date
+    }]
 }, {
     timestamps: true
 });
