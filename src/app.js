@@ -3,9 +3,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
+const http = require('http');
 
 const connect_db = require('./config/database');
 const user_routes = require('./routes/user_routes');
+const socket_service = require('./services/socket_service');
+const social_routes = require('./routes/social_routes');
 
 const app = express();
 
@@ -81,6 +84,13 @@ app.get('/database_status', async (req, res) => {
 
 // Routes
 app.use('/api/users', user_routes);
+
+// Initialize socket
+const server = http.createServer(app);
+const io = socket_service.init(server);
+
+// Add routes
+app.use('/api/social', social_routes);
 
 // 404 Not Found middleware
 app.use((req, res, next) => {

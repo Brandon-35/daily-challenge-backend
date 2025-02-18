@@ -120,7 +120,43 @@ const user_schema = new mongoose.Schema({
         },
         progress: Number,
         unlocked_at: Date
-    }]
+    }],
+    social_settings: {
+        profile_visibility: {
+            type: String,
+            enum: ['public', 'followers', 'private'],
+            default: 'public'
+        },
+        activity_visibility: {
+            type: String,
+            enum: ['public', 'followers', 'private'],
+            default: 'public'
+        },
+        allow_follows: {
+            type: Boolean,
+            default: true
+        },
+        auto_share: {
+            achievements: Boolean,
+            challenges: Boolean,
+            badges: Boolean
+        },
+        notification_preferences: {
+            follows: Boolean,
+            likes: Boolean,
+            comments: Boolean,
+            mentions: Boolean,
+            shares: Boolean,
+            achievements: Boolean
+        }
+    },
+    social_stats: {
+        followers_count: { type: Number, default: 0 },
+        following_count: { type: Number, default: 0 },
+        total_likes: { type: Number, default: 0 },
+        total_shares: { type: Number, default: 0 },
+        reputation_score: { type: Number, default: 0 }
+    }
 }, {
     timestamps: true
 });
