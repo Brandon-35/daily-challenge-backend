@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ChallengeSchema = new mongoose.Schema({
+const challengeSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
@@ -71,7 +71,8 @@ const ChallengeSchema = new mongoose.Schema({
     },
     points: {
         type: Number,
-        default: 10
+        required: true,
+        min: 0
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -86,13 +87,22 @@ const ChallengeSchema = new mongoose.Schema({
         insights: String,
         recommendedActions: [String],
         complexity: Number
+    },
+    created_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    is_active: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true
 });
 
 // Validation to ensure endDate is after startDate
-ChallengeSchema.pre('validate', function(next) {
+challengeSchema.pre('validate', function(next) {
     if (this.endDate < this.startDate) {
         next(new Error('End date must be after start date'));
     } else {
@@ -101,7 +111,7 @@ ChallengeSchema.pre('validate', function(next) {
 });
 
 // Method to update progress
-ChallengeSchema.methods.updateProgress = function(newProgress) {
+challengeSchema.methods.updateProgress = function(newProgress) {
     this.progress = Math.min(Math.max(newProgress, 0), 100);
     
     // Auto-update status based on progress
@@ -114,4 +124,5 @@ ChallengeSchema.methods.updateProgress = function(newProgress) {
     return this;
 };
 
-module.exports = mongoose.model('Challenge', ChallengeSchema);
+const Challenge = mongoose.model('Challenge', challengeSchema);
+module.exports = Challenge;

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const User = require('../src/models/User');
 const bcrypt = require('bcryptjs');
+const Challenge = require('../src/models/Challenge');
 
 async function seed_database() {
   try {
@@ -89,14 +90,64 @@ async function seed_database() {
       is_active: user.is_active
     })));
 
-    console.log('\n📈 Seeding Statistics:');
+    // Clear existing challenges
+    await Challenge.deleteMany({});
+    console.log('🧹 Cleared existing challenges');
+
+    // Get admin user for reference
+    const admin = await User.findOne({ role: 'admin' });
+
+    // Create sample challenges
+    const challenges = await Challenge.insertMany([
+      {
+        title: 'Basic Algorithm Challenge',
+        description: 'Write a function to reverse a string',
+        difficulty: 'easy',
+        points: 10,
+        category: 'algorithms',
+        created_by: admin._id,
+        is_active: true
+      },
+      {
+        title: 'Data Structure Implementation',
+        description: 'Implement a binary search tree',
+        difficulty: 'medium',
+        points: 20,
+        category: 'data structures',
+        created_by: admin._id,
+        is_active: true
+      },
+      {
+        title: 'Advanced System Design',
+        description: 'Design a distributed cache system',
+        difficulty: 'hard',
+        points: 30,
+        category: 'system design',
+        created_by: admin._id,
+        is_active: true
+      }
+    ]);
+
+    console.log('\n📊 Seeded Challenges:');
+    console.table(challenges.map(challenge => ({
+      title: challenge.title,
+      difficulty: challenge.difficulty,
+      points: challenge.points,
+      category: challenge.category
+    })));
+
+    // Update statistics to include challenges
     const stats = {
       total_users: await User.countDocuments(),
       active_users: await User.countDocuments({ is_active: true }),
       admins: await User.countDocuments({ role: 'admin' }),
       moderators: await User.countDocuments({ role: 'moderator' }),
       editors: await User.countDocuments({ role: 'editor' }),
-      regular_users: await User.countDocuments({ role: 'user' })
+      regular_users: await User.countDocuments({ role: 'user' }),
+      total_challenges: await Challenge.countDocuments(),
+      easy_challenges: await Challenge.countDocuments({ difficulty: 'easy' }),
+      medium_challenges: await Challenge.countDocuments({ difficulty: 'medium' }),
+      hard_challenges: await Challenge.countDocuments({ difficulty: 'hard' })
     };
     console.table(stats);
 
