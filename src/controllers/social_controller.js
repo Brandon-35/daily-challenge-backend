@@ -198,7 +198,57 @@ const social_controller = {
                 message: error.message
             });
         }
-    }
+    },
+
+    // Get user's followers
+    async get_followers(req, res) {
+        try {
+            const user_id = req.user.user_id;
+            const followers = await Follow.find({ following: user_id })
+                .populate('follower', 'username avatar')
+                .sort({ created_at: -1 });
+
+            res.json({
+                status: 'success',
+                data: {
+                    followers: followers.map(f => ({
+                        user: f.follower,
+                        followed_at: f.created_at
+                    }))
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Get users being followed
+    async get_following(req, res) {
+        try {
+            const user_id = req.user.user_id;
+            const following = await Follow.find({ follower: user_id })
+                .populate('following', 'username avatar')
+                .sort({ created_at: -1 });
+
+            res.json({
+                status: 'success',
+                data: {
+                    following: following.map(f => ({
+                        user: f.following,
+                        followed_at: f.created_at
+                    }))
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
 
     // ... other controller functions
 };
