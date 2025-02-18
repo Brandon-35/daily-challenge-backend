@@ -9,6 +9,7 @@ const connect_db = require('./config/database');
 const user_routes = require('./routes/user_routes');
 const socket_service = require('./services/socket_service');
 const social_routes = require('./routes/social_routes');
+const challenge_routes = require('./routes/challenge_routes');
 
 const app = express();
 
@@ -91,6 +92,7 @@ const io = socket_service.init(server);
 
 // Add routes
 app.use('/api/social', social_routes);
+app.use('/api', challenge_routes);
 
 // 404 Not Found middleware
 app.use((req, res, next) => {

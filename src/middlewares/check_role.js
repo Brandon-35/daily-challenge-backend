@@ -1,41 +1,39 @@
 const User = require('../models/User');
 
-const check_role = (allowed_roles, required_capability = null) => {
-  return async (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authentication required'
-      });
-    }
+const check_role = (allowed_roles, required_capability) => {
+    return (req, res, next) => {
+        try {
+            console.log('Checking role:', {
+                user_role: req.user?.role,
+                allowed_roles,
+                required_capability
+            });
 
-    const user = await User.findById(req.user.user_id);
-    
-    if (!user) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'User not found'
-      });
-    }
+            // Kiểm tra xem có token và role không
+            if (!req.user || !req.user.role) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'No role found in token'
+                });
+            }
 
-    const user_role = user.role;
+            // Kiểm tra role có được phép không
+            if (!allowed_roles.includes(req.user.role)) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Access denied. Insufficient role permissions'
+                });
+            }
 
-    if (!allowed_roles.includes(user_role)) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Access denied. Insufficient role permissions'
-      });
-    }
-
-    if (required_capability && (!user.capabilities || !user.capabilities.includes(required_capability))) {
-      return res.status(403).json({
-        status: 'error',
-        message: `Access denied. ${required_capability} permission required`
-      });
-    }
-
-    next();
-  };
+            next();
+        } catch (error) {
+            console.error('Role check error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'Error checking role permissions'
+            });
+        }
+    };
 };
 
 module.exports = { check_role }; 

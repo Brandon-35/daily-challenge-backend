@@ -37,17 +37,29 @@ const challenge_controller = {
   // Create new challenge
   async create_challenge(req, res) {
     try {
-      const { title, description, difficulty, points, category } = req.body;
-      
-      const challenge = new Challenge({
+      const { 
+        title, 
+        description, 
+        difficulty, 
+        points, 
+        category,
+        start_date,
+        end_date 
+      } = req.body;
+
+      // Convert string dates to Date objects if needed
+      const challenge_data = {
         title,
         description,
         difficulty,
         points,
         category,
-        created_by: req.user.user_id
-      });
+        created_by: req.user.user_id,
+        start_date: start_date ? new Date(start_date) : new Date(),
+        end_date: new Date(end_date)
+      };
 
+      const challenge = new Challenge(challenge_data);
       await challenge.save();
 
       res.status(201).json({
@@ -56,6 +68,7 @@ const challenge_controller = {
         data: { challenge }
       });
     } catch (error) {
+      console.error('Create challenge error:', error);
       res.status(500).json({
         status: 'error',
         message: error.message

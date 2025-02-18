@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcryptjs = require('bcryptjs');
 
 // Updated capabilities with 'can_' prefix
 const CAPABILITIES = {
@@ -22,41 +22,34 @@ const ROLE_CAPABILITIES = {
 const user_schema = new mongoose.Schema({
     username: {
         type: String,
-        required: [true, 'Username is required'],
+        required: true,
         unique: true,
-        trim: true,
-        minlength: [3, 'Username must be at least 3 characters long'],
-        maxlength: [30, 'Username cannot exceed 30 characters']
+        trim: true
     },
     email: {
         type: String,
-        required: [true, 'Email is required'],
+        required: true,
         unique: true,
         trim: true,
         lowercase: true
     },
     password: {
         type: String,
-        required: true,
-        minlength: 6
+        required: true
     },
     first_name: {
         type: String,
-        required: [true, 'First name is required'],
-        trim: true,
-        minlength: [2, 'First name must be at least 2 characters long'],
-        maxlength: [50, 'First name cannot exceed 50 characters']
+        required: true,
+        trim: true
     },
     last_name: {
         type: String,
-        required: [true, 'Last name is required'],
-        trim: true,
-        minlength: [2, 'Last name must be at least 2 characters long'],
-        maxlength: [50, 'Last name cannot exceed 50 characters']
+        required: true,
+        trim: true
     },
     role: {
         type: String,
-        enum: Object.keys(ROLE_CAPABILITIES),
+        enum: ['user', 'admin', 'moderator', 'editor'],
         default: 'user'
     },
     capabilities: [{
@@ -169,17 +162,22 @@ user_schema.pre('save', function(next) {
     next();
 });
 
-// Hash password trước khi lưu
+// Add password hashing middleware
 user_schema.pre('save', async function(next) {
-    if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10);
+    if (!this.isModified('password')) return next();
+    
+    try {
+        const salt = await bcryptjs.genSalt(10);
+        this.password = await bcryptjs.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
     }
-    next();
 });
 
-// Method kiểm tra password
+// Add password comparison method
 user_schema.methods.compare_password = async function(candidate_password) {
-    return bcrypt.compare(candidate_password, this.password);
+    return await bcryptjs.compare(candidate_password, this.password);
 };
 
 // Method kiểm tra có capability không

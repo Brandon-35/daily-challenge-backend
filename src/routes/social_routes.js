@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const social_controller = require('../controllers/social_controller');
+const { check_role } = require('../middlewares/check_role');
 const auth = require('../middlewares/auth');
 
 // Follow routes

@@ -1,26 +1,69 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcryptjs = require('bcryptjs');
 
 const user_controller = {
   // Register new user
   async register(req, res) {
     try {
-      const { username, email, password, first_name, last_name } = req.body;
-      
-      // Create new user
+      const { 
+        username, 
+        email, 
+        password, 
+        confirm_password,
+        first_name, 
+        last_name,
+        role // Allow role to be set during registration
+      } = req.body;
+
+      // Validate password match
+      if (password !== confirm_password) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Passwords do not match'
+        });
+      }
+
+      // Check if user already exists
+      const existing_user = await User.findOne({
+        $or: [{ email }, { username }]
+      });
+
+      if (existing_user) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'User with this email or username already exists'
+        });
+      }
+
+      // Create new user with explicit role
       const user = new User({
         username,
         email,
         password,
         first_name,
-        last_name
+        last_name,
+        role: role || 'user', // Use provided role or default to 'user'
+        is_active: true
       });
 
       await user.save();
 
+      // Log the created user for debugging
+      console.log('Created user:', {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        capabilities: user.capabilities
+      });
+
       // Generate token
       const token = jwt.sign(
-        { user_id: user._id },
+        { 
+          user_id: user._id,
+          role: user.role,
+          capabilities: user.capabilities
+        },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -29,17 +72,18 @@ const user_controller = {
         status: 'success',
         message: 'Registration successful',
         token,
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          capabilities: user.capabilities
+        data: {
+          user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            capabilities: user.capabilities
+          }
         }
       });
     } catch (error) {
+      console.error('Registration error:', error);
       res.status(500).json({
         status: 'error',
         message: error.message
@@ -51,63 +95,44 @@ const user_controller = {
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      
-      // Validate input
-      if (!email) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Email is required'
-        });
-      }
+      const user = await User.findOne({ email });
 
-      if (!password) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Password is required'
-        });
-      }
-
-      const user = await User.findOne({ 
-        email: email.toLowerCase(),
-        is_active: true  // Only allow active users to login
-      });
-      
       if (!user) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid login credentials'
+          message: 'Invalid credentials'
         });
       }
 
-      // Compare password using the plain text password
-      const is_valid_password = await user.compare_password(password);
-      console.log(password,is_valid_password);
-      
-      if (!is_valid_password) {
+      const is_valid = await user.compare_password(password);
+      if (!is_valid) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid login credentials'
+          message: 'Invalid credentials'
         });
       }
 
       const token = jwt.sign(
-        { user_id: user._id },
+        { 
+          user_id: user._id,
+          role: user.role,
+          capabilities: user.capabilities
+        },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
+      // Return token directly in response
       res.json({
         status: 'success',
-        message: 'Login successful',
         token,
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          capabilities: user.capabilities
+        data: {
+          user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+          }
         }
       });
     } catch (error) {
