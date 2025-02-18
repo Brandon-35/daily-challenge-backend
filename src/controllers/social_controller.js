@@ -646,6 +646,174 @@ const social_controller = {
         } catch (error) {
             console.error('Error notifying moderators:', error);
         }
+    },
+
+    // Get all reports for moderators
+    async get_reports(req, res) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 20;
+            const status = req.query.status || 'pending';
+
+            // Find activities with reports
+            const activities = await Activity.find({
+                'moderation.reports': { $exists: true, $ne: [] },
+                'moderation.status': status
+            })
+                .populate('user', 'username avatar')
+                .populate('moderation.reports.user', 'username')
+                .sort({ 'moderation.reports.created_at': -1 })
+                .skip((page - 1) * limit)
+                .limit(limit);
+
+            const total_reports = await Activity.countDocuments({
+                'moderation.reports': { $exists: true, $ne: [] },
+                'moderation.status': status
+            });
+
+            res.json({
+                status: 'success',
+                data: {
+                    reports: activities.map(activity => ({
+                        activity_id: activity._id,
+                        content: activity.content,
+                        user: activity.user,
+                        reports: activity.moderation.reports,
+                        status: activity.moderation.status,
+                        created_at: activity.created_at
+                    })),
+                    pagination: {
+                        current_page: page,
+                        total_pages: Math.ceil(total_reports / limit),
+                        total_items: total_reports,
+                        has_more: page * limit < total_reports
+                    }
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Handle report (for moderators)
+    async handle_report(req, res) {
+        try {
+            const { action, reason } = req.body;
+            const activity = await Activity.findById(req.params.id);
+
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            // Update report status
+            activity.moderation.reports = activity.moderation.reports.map(report => {
+                if (report.status === 'pending') {
+                    report.status = 'reviewed';
+                }
+                return report;
+            });
+
+            // Handle different moderation actions
+            switch (action) {
+                case 'dismiss':
+                    activity.moderation.status = 'active';
+                    break;
+
+                case 'remove':
+                    activity.moderation.status = 'removed';
+                    activity.is_hidden = true;
+                    break;
+
+                case 'warn':
+                    activity.moderation.status = 'active';
+                    // Send warning to user
+                    await create_warning_notification(activity.user, reason);
+                    break;
+
+                default:
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Invalid moderation action'
+                    });
+            }
+
+            // Add moderation log
+            activity.moderation.logs = activity.moderation.logs || [];
+            activity.moderation.logs.push({
+                moderator: req.user.user_id,
+                action,
+                reason,
+                handled_at: new Date()
+            });
+
+            await activity.save();
+
+            // Notify reporter(s)
+            await notify_reporters(activity, action);
+
+            res.json({
+                status: 'success',
+                message: 'Report handled successfully',
+                data: {
+                    activity: {
+                        id: activity._id,
+                        status: activity.moderation.status,
+                        action_taken: action
+                    }
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Helper function to create warning notification
+    async create_warning_notification(user_id, reason) {
+        try {
+            await Notification.create({
+                recipient: user_id,
+                type: 'content_warning',
+                content: {
+                    title: 'Content Warning',
+                    body: `Your content has been flagged: ${reason}`
+                }
+            });
+        } catch (error) {
+            console.error('Error creating warning notification:', error);
+        }
+    },
+
+    // Helper function to notify reporters
+    async notify_reporters(activity, action) {
+        try {
+            const notifications = activity.moderation.reports
+                .filter(report => report.status === 'reviewed')
+                .map(report => ({
+                    recipient: report.user,
+                    type: 'report_handled',
+                    content: {
+                        title: 'Report Update',
+                        body: `Your report has been reviewed and the content has been ${action}ed`
+                    },
+                    reference: {
+                        model: 'Activity',
+                        id: activity._id
+                    }
+                }));
+
+            await Notification.insertMany(notifications);
+        } catch (error) {
+            console.error('Error notifying reporters:', error);
+        }
     }
 };
 
