@@ -3,6 +3,7 @@ require('dotenv').config();
 const User = require('../src/models/User');
 const bcrypt = require('bcryptjs');
 const Challenge = require('../src/models/Challenge');
+const Log = require('../src/models/Log');
 
 async function seed_database() {
   try {
@@ -150,6 +151,56 @@ async function seed_database() {
       hard_challenges: await Challenge.countDocuments({ difficulty: 'hard' })
     };
     console.table(stats);
+
+    // After creating challenges
+    console.log('🧹 Creating sample logs...');
+
+    const logs = await Log.insertMany([
+        {
+            user: admin._id,
+            challenge: challenges[0]._id,
+            action: 'complete',
+            details: {
+                time_spent: 30,
+                progress: 100,
+                notes: 'Completed successfully',
+                mood: 'great'
+            },
+            status: 'success',
+            metrics: {
+                execution_time: 500,
+                memory_usage: 1024,
+                code_quality_score: 95
+            }
+        },
+        {
+            user: admin._id,
+            challenge: challenges[1]._id,
+            action: 'start',
+            details: {
+                time_spent: 15,
+                progress: 30,
+                notes: 'Good start',
+                mood: 'good'
+            },
+            status: 'in_progress',
+            metrics: {
+                execution_time: 300,
+                memory_usage: 512,
+                code_quality_score: 85
+            }
+        }
+        // Add more sample logs as needed
+    ]);
+
+    console.log('\n📊 Seeded Logs:');
+    console.table(logs.map(log => ({
+        user: log.user,
+        challenge: log.challenge,
+        action: log.action,
+        status: log.status,
+        progress: log.details.progress
+    })));
 
     await mongoose.disconnect();
     console.log('\n✅ Database seeded successfully!');

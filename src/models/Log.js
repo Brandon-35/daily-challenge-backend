@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const LogSchema = new mongoose.Schema({
+const log_schema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -11,68 +11,36 @@ const LogSchema = new mongoose.Schema({
         ref: 'Challenge',
         required: true
     },
-    date: {
-        type: Date,
-        default: Date.now,
+    action: {
+        type: String,
+        enum: ['start', 'submit', 'complete', 'abandon', 'resume'],
         required: true
     },
-    description: {
+    details: {
+        time_spent: Number, // in minutes
+        progress: Number,
+        notes: String,
+        mood: {
+            type: String,
+            enum: ['great', 'good', 'neutral', 'difficult', 'struggling']
+        }
+    },
+    status: {
         type: String,
-        required: true,
-        trim: true,
-        maxlength: 1000
+        enum: ['success', 'failure', 'in_progress'],
+        default: 'in_progress'
     },
-    duration: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
-    progressIncrement: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 100
-    },
-    mood: {
-        type: String,
-        enum: ['excellent', 'good', 'neutral', 'bad', 'terrible'],
-        default: 'neutral'
-    },
-    tags: [{
-        type: String,
-        trim: true
-    }],
-    attachments: [{
-        type: String  // URLs or file paths
-    }],
-    aiInsights: {
-        emotionalTrend: String,
-        performanceAnalysis: String,
-        suggestions: [String]
+    metrics: {
+        execution_time: Number,
+        memory_usage: Number,
+        code_quality_score: Number
     }
 }, {
     timestamps: true
 });
 
-// Validation to ensure description is not empty
-LogSchema.pre('validate', function(next) {
-    if (!this.description || this.description.trim().length === 0) {
-        next(new Error('Log description cannot be empty'));
-    } else {
-        next();
-    }
-});
+// Index for efficient querying
+log_schema.index({ user: 1, challenge: 1, createdAt: -1 });
 
-// Method to generate AI insights (placeholder)
-LogSchema.methods.generateAIInsights = async function() {
-    // TODO: Implement AI analysis logic
-    // This would typically involve calling an external AI service
-    this.aiInsights = {
-        emotionalTrend: 'Consistent',
-        performanceAnalysis: 'Steady progress',
-        suggestions: ['Keep maintaining your current momentum']
-    };
-    return this;
-};
-
-module.exports = mongoose.model('Log', LogSchema);
+const Log = mongoose.model('Log', log_schema);
+module.exports = Log;
