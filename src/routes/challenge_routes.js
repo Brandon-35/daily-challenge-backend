@@ -63,4 +63,9 @@ router.put(
     challenge_controller.update_schedule
 );
 
+// Streak routes
+router.get('/streak/status', auth, challenge_controller.get_streak_status);
+router.get('/streak/history', auth, challenge_controller.get_streak_history);
+router.get('/streak/leaderboard', challenge_controller.get_streak_leaderboard);
+
 module.exports = router; 

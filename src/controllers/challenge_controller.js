@@ -2,6 +2,7 @@ const Challenge = require('../models/Challenge');
 const User = require('../models/User');
 const Leaderboard = require('../models/Leaderboard');
 const { get_current_season, calculate_points, check_for_achievements } = require('../utils/ranking');
+const streak_manager = require('../utils/streak_manager');
 
 // Utility function to update user's points and rank
 async function update_user_rank(user_id, points) {
@@ -224,6 +225,24 @@ const challenge_controller = {
         
         // Update user's rank and points
         await update_user_rank(req.user.user_id, earnedPoints);
+
+        // Update streak
+        const streak_stats = await streak_manager.update_streak(req.user.user_id);
+        
+        // Calculate points with streak bonus
+        const streak_multiplier = streak_manager.calculate_streak_bonus(
+            streak_stats.current_streak
+        );
+        earnedPoints = challenge.points * streak_multiplier;
+
+        // Add streak bonus notification
+        if (streak_multiplier > 1) {
+            const bonus_percentage = ((streak_multiplier - 1) * 100).toFixed(0);
+            notifications.push({
+                type: 'streak_bonus',
+                message: `${bonus_percentage}% bonus from ${streak_stats.current_streak}-day streak!`
+            });
+        }
       }
 
       // Create submission
@@ -583,6 +602,84 @@ const challenge_controller = {
         status: 'error',
         message: error.message
       });
+    }
+  },
+
+  // Get user's streak status
+  async get_streak_status(req, res) {
+    try {
+        const user = await User.findById(req.user.user_id)
+            .select('statistics.streak');
+
+        const streak_stats = user.statistics.streak;
+        const next_milestone = await get_next_milestone(streak_stats.current_streak);
+
+        res.json({
+            status: 'success',
+            data: {
+                current_streak: streak_stats.current_streak,
+                longest_streak: streak_stats.longest_streak,
+                last_activity: streak_stats.last_activity_date,
+                next_milestone,
+                current_multiplier: streak_manager.calculate_streak_bonus(
+                    streak_stats.current_streak
+                )
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
+  },
+
+  // Get user's streak history
+  async get_streak_history(req, res) {
+    try {
+        const user = await User.findById(req.user.user_id)
+            .select('statistics.streak.streak_history statistics.streak.streak_milestones');
+
+        res.json({
+            status: 'success',
+            data: {
+                streak_history: user.statistics.streak.streak_history,
+                milestones_achieved: user.statistics.streak.streak_milestones
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
+  },
+
+  // Get streak leaderboard
+  async get_streak_leaderboard(req, res) {
+    try {
+        const users = await User.find({
+            'statistics.streak.current_streak': { $gt: 0 }
+        })
+        .select('username statistics.streak.current_streak statistics.streak.longest_streak')
+        .sort({ 'statistics.streak.current_streak': -1 })
+        .limit(10);
+
+        res.json({
+            status: 'success',
+            data: {
+                current_streaks: users.map(user => ({
+                    username: user.username,
+                    current_streak: user.statistics.streak.current_streak,
+                    longest_streak: user.statistics.streak.longest_streak
+                }))
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
     }
   }
 };

@@ -89,8 +89,25 @@ const user_schema = new mongoose.Schema({
         total_points: { type: Number, default: 0 },
         challenges_completed: { type: Number, default: 0 },
         success_rate: { type: Number, default: 0 },
-        current_streak: { type: Number, default: 0 },
-        longest_streak: { type: Number, default: 0 }
+        streak: {
+            current_streak: { type: Number, default: 0 },
+            longest_streak: { type: Number, default: 0 },
+            last_activity_date: { type: Date },
+            streak_history: [{
+                start_date: Date,
+                end_date: Date,
+                duration: Number,
+                break_reason: String
+            }],
+            streak_milestones: [{
+                days: Number,
+                achieved_at: Date,
+                reward: {
+                    points: Number,
+                    badge: { type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }
+                }
+            }]
+        }
     },
     badges: [{
         type: mongoose.Schema.Types.ObjectId,
