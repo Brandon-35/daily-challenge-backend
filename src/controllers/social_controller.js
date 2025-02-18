@@ -566,6 +566,86 @@ const social_controller = {
                 message: error.message
             });
         }
+    },
+
+    // Report activity
+    async report_activity(req, res) {
+        try {
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            // Check if user already reported this activity
+            const already_reported = activity.moderation.reports
+                .some(report => report.user.toString() === req.user.user_id);
+
+            if (already_reported) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'You have already reported this activity'
+                });
+            }
+
+            // Add report
+            activity.moderation.reports.push({
+                user: req.user.user_id,
+                reason: req.body.reason,
+                status: 'pending',
+                created_at: new Date()
+            });
+
+            // Update moderation status if reports threshold reached
+            const report_threshold = 3; // Configure this as needed
+            if (activity.moderation.reports.length >= report_threshold) {
+                activity.moderation.status = 'under_review';
+            }
+
+            await activity.save();
+
+            // Notify moderators
+            await notify_moderators_of_report(activity, req.body.reason);
+
+            res.json({
+                status: 'success',
+                message: 'Activity reported successfully'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Helper function to notify moderators
+    async notify_moderators_of_report(activity, reason) {
+        try {
+            // Get all moderators
+            const moderators = await User.find({ role: 'moderator' });
+
+            // Create notification for each moderator
+            const notifications = moderators.map(moderator => ({
+                recipient: moderator._id,
+                type: 'activity_report',
+                content: {
+                    title: 'New Activity Report',
+                    body: `Activity ${activity._id} has been reported for: ${reason}`
+                },
+                reference: {
+                    model: 'Activity',
+                    id: activity._id
+                }
+            }));
+
+            await Notification.insertMany(notifications);
+        } catch (error) {
+            console.error('Error notifying moderators:', error);
+        }
     }
 };
 
