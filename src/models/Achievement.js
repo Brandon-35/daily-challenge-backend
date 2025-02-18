@@ -1,116 +1,57 @@
 const mongoose = require('mongoose');
 
-const AchievementSchema = new mongoose.Schema({
+const achievement_schema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
-        trim: true,
-        maxlength: 100
+        unique: true,
+        trim: true
     },
     description: {
         type: String,
         required: true,
-        trim: true,
-        maxlength: 500
+        trim: true
     },
     category: {
         type: String,
-        enum: [
-            'Consistency', 
-            'Challenge Completion', 
-            'Skill Mastery', 
-            'Milestone', 
-            'Personal Growth',
-            'Streak'
-        ],
+        enum: ['challenge', 'streak', 'points', 'social', 'special'],
+        required: true
+    },
+    icon: {
+        type: String,  // URL to achievement icon
         required: true
     },
     points: {
         type: Number,
-        default: 10,
+        default: 0,
         min: 0
     },
-    icon: {
-        type: String,
-        default: 'default-achievement.png'
-    },
     criteria: {
-        type: mongoose.Schema.Types.Mixed,
-        required: true
+        type: {
+            type: String,
+            enum: ['challenges_completed', 'points_earned', 'streak_days', 'perfect_solutions'],
+            required: true
+        },
+        threshold: {
+            type: Number,
+            required: true
+        }
     },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+    rarity: {
+        type: String,
+        enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'],
+        default: 'common'
     },
-    relatedChallenge: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Challenge'
-    },
-    isHidden: {
+    is_active: {
         type: Boolean,
-        default: false
-    },
-    unlockedAt: {
-        type: Date,
-        default: Date.now
+        default: true
     }
 }, {
     timestamps: true
 });
 
-// Predefined achievement types
-const ACHIEVEMENT_TYPES = {
-    FIRST_CHALLENGE: {
-        title: 'First Step',
-        description: 'Created your first challenge',
-        category: 'Milestone',
-        points: 50
-    },
-    DAILY_STREAK: {
-        title: 'Streak Master',
-        description: 'Completed challenges for 7 consecutive days',
-        category: 'Streak',
-        points: 100
-    },
-    // Add more predefined achievements
-};
+// Index for efficient querying
+achievement_schema.index({ category: 1, rarity: 1 });
 
-// Static method to create achievements
-AchievementSchema.statics.createAchievement = function(achievementType, user, relatedChallenge = null) {
-    const achievementData = ACHIEVEMENT_TYPES[achievementType];
-    
-    if (!achievementData) {
-        throw new Error('Invalid achievement type');
-    }
-
-    return this.create({
-        ...achievementData,
-        user: user._id,
-        relatedChallenge: relatedChallenge ? relatedChallenge._id : null
-    });
-};
-
-// Method to check and potentially unlock achievements
-AchievementSchema.statics.checkAndUnlock = async function(user) {
-    const achievementsToUnlock = [];
-
-    // Example achievement unlock logic
-    const challengeCount = await mongoose.models.Challenge.countDocuments({ user: user._id });
-    
-    if (challengeCount === 1) {
-        achievementsToUnlock.push(
-            await this.createAchievement('FIRST_CHALLENGE', user)
-        );
-    }
-
-    // TODO: Implement more complex achievement unlock logic
-    // Examples:
-    // - Check daily/weekly streaks
-    // - Check challenge completion rates
-    // - Check total points earned
-
-    return achievementsToUnlock;
-};
-
-module.exports = mongoose.model('Achievement', AchievementSchema);
+const Achievement = mongoose.model('Achievement', achievement_schema);
+module.exports = Achievement;

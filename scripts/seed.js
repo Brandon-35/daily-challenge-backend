@@ -4,6 +4,7 @@ const User = require('../src/models/User');
 const bcrypt = require('bcryptjs');
 const Challenge = require('../src/models/Challenge');
 const Log = require('../src/models/Log');
+const Achievement = require('../src/models/Achievement');
 
 async function seed_database() {
   try {
@@ -200,6 +201,68 @@ async function seed_database() {
         action: log.action,
         status: log.status,
         progress: log.details.progress
+    })));
+
+    // Create sample achievements
+    console.log('🏆 Creating sample achievements...');
+
+    const achievements = await Achievement.insertMany([
+        {
+            title: 'First Steps',
+            description: 'Complete your first challenge',
+            category: 'challenge',
+            icon: '/icons/first-steps.png',
+            points: 10,
+            criteria: {
+                type: 'challenges_completed',
+                threshold: 1
+            },
+            rarity: 'common'
+        },
+        {
+            title: 'Code Warrior',
+            description: 'Complete 10 challenges',
+            category: 'challenge',
+            icon: '/icons/code-warrior.png',
+            points: 50,
+            criteria: {
+                type: 'challenges_completed',
+                threshold: 10
+            },
+            rarity: 'uncommon'
+        },
+        {
+            title: 'Point Master',
+            description: 'Earn 1000 points',
+            category: 'points',
+            icon: '/icons/point-master.png',
+            points: 100,
+            criteria: {
+                type: 'points_earned',
+                threshold: 1000
+            },
+            rarity: 'rare'
+        },
+        {
+            title: 'Streak Master',
+            description: 'Maintain a 7-day streak',
+            category: 'streak',
+            icon: '/icons/streak-master.png',
+            points: 75,
+            criteria: {
+                type: 'streak_days',
+                threshold: 7
+            },
+            rarity: 'epic'
+        }
+    ]);
+
+    console.log('\n📊 Seeded Achievements:');
+    console.table(achievements.map(achievement => ({
+        title: achievement.title,
+        category: achievement.category,
+        points: achievement.points,
+        rarity: achievement.rarity
     })));
 
     await mongoose.disconnect();
