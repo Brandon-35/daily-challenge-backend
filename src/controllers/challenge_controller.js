@@ -260,17 +260,194 @@ const challenge_controller = {
     }
   },
 
-  // Lấy daily challenge
+  // Get current daily challenge
   async get_daily_challenge(req, res) {
     try {
       const today = new Date();
-      const challenge = await Challenge.findOne({
-        difficulty: 'medium',
-        submissions: { $size: { $lt: 100 } }
-      }).sort({ createdAt: -1 });
+      today.setHours(0, 0, 0, 0);
+
+      const daily_challenge = await Challenge.findOne({
+        challenge_type: 'daily',
+        'schedule.start_date': { $lte: today },
+        'schedule.end_date': { $gte: today },
+        is_active: true
+      }).populate('bonus_rewards.special_badge');
+
+      if (!daily_challenge) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'No daily challenge available'
+        });
+      }
 
       res.json({
         status: 'success',
+        data: { daily_challenge }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Get current weekly challenge
+  async get_weekly_challenge(req, res) {
+    try {
+      const today = new Date();
+      const start_of_week = new Date(today);
+      start_of_week.setDate(today.getDate() - today.getDay());
+      start_of_week.setHours(0, 0, 0, 0);
+
+      const weekly_challenge = await Challenge.findOne({
+        challenge_type: 'weekly',
+        'schedule.start_date': { $lte: today },
+        'schedule.end_date': { $gte: start_of_week },
+        is_active: true
+      }).populate('bonus_rewards.special_badge');
+
+      if (!weekly_challenge) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'No weekly challenge available'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        data: { weekly_challenge }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Participate in a daily/weekly challenge
+  async participate_challenge(req, res) {
+    try {
+      const { id } = req.params;
+      const user_id = req.user.user_id;
+
+      const challenge = await Challenge.findById(id);
+      
+      if (!challenge) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Challenge not found'
+        });
+      }
+
+      // Check if user already participating
+      const existing_participation = challenge.participants.find(
+        p => p.user.toString() === user_id
+      );
+
+      if (existing_participation) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Already participating in this challenge'
+        });
+      }
+
+      // Check participation limit
+      if (challenge.participation_limit > 0 && 
+        challenge.participants.length >= challenge.participation_limit) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Challenge participation limit reached'
+        });
+      }
+
+      // Add user to participants
+      challenge.participants.push({
+        user: user_id,
+        started_at: new Date()
+      });
+
+      await challenge.save();
+
+      res.json({
+        status: 'success',
+        message: 'Successfully joined the challenge',
+        data: { challenge }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Get user's challenge progress
+  async get_user_challenge_progress(req, res) {
+    try {
+      const user_id = req.user.user_id;
+
+      const active_challenges = await Challenge.find({
+        'participants.user': user_id,
+        'participants.status': { $in: ['registered', 'in_progress'] },
+        is_active: true
+      }).populate('bonus_rewards.special_badge');
+
+      const completed_challenges = await Challenge.find({
+        'participants.user': user_id,
+        'participants.status': 'completed',
+        is_active: true
+      }).sort({ 'participants.completed_at': -1 }).limit(10);
+
+      // Calculate streak
+      const user = await User.findById(user_id);
+      const current_streak = user.statistics.current_streak;
+      const streak_bonus = Math.floor(current_streak / 7) * 0.1; // 10% bonus per week of streak
+
+      res.json({
+        status: 'success',
+        data: {
+          active_challenges,
+          completed_challenges,
+          stats: {
+            current_streak,
+            streak_bonus: `${streak_bonus * 100}%`,
+            total_completed: completed_challenges.length
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  },
+
+  // Admin: Schedule a new challenge
+  async schedule_challenge(req, res) {
+    try {
+      const {
+        challenge_data,
+        schedule,
+        participation_limit,
+        bonus_rewards
+      } = req.body;
+
+      const challenge = new Challenge({
+        ...challenge_data,
+        challenge_type: schedule.repeat_pattern === 'none' ? 'regular' : schedule.repeat_pattern,
+        schedule,
+        participation_limit,
+        bonus_rewards
+      });
+
+      await challenge.save();
+
+      res.status(201).json({
+        status: 'success',
+        message: 'Challenge scheduled successfully',
         data: { challenge }
       });
     } catch (error) {

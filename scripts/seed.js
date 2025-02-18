@@ -316,6 +316,59 @@ async function seed_database() {
         bonus_points: badge.bonus_points
     })));
 
+    // Create daily/weekly challenges
+    const today = new Date();
+    const next_week = new Date(today);
+    next_week.setDate(today.getDate() + 7);
+
+    const daily_weekly_challenges = await Challenge.insertMany([
+        {
+            title: "Today's Algorithm Challenge",
+            description: "Solve this daily coding puzzle",
+            difficulty: 'medium',
+            points: 50,
+            category: 'algorithms',
+            created_by: admin._id,
+            challenge_type: 'daily',
+            schedule: {
+                start_date: today,
+                end_date: new Date(today.setHours(23, 59, 59)),
+                repeat_pattern: 'daily'
+            },
+            bonus_rewards: {
+                points: 20,
+                streak_multiplier: 1.2
+            }
+        },
+        {
+            title: "Weekly Data Structure Challenge",
+            description: "Master advanced data structures",
+            difficulty: 'hard',
+            points: 100,
+            category: 'data structures',
+            created_by: admin._id,
+            challenge_type: 'weekly',
+            schedule: {
+                start_date: today,
+                end_date: next_week,
+                repeat_pattern: 'weekly'
+            },
+            bonus_rewards: {
+                points: 50,
+                streak_multiplier: 1.5,
+                special_badge: badges[0]._id // Reference to a previously created badge
+            }
+        }
+    ]);
+
+    console.log('\n📅 Seeded Daily/Weekly Challenges:');
+    console.table(daily_weekly_challenges.map(challenge => ({
+        title: challenge.title,
+        type: challenge.challenge_type,
+        points: challenge.points,
+        bonus: challenge.bonus_rewards.points
+    })));
+
     await mongoose.disconnect();
     console.log('\n✅ Database seeded successfully!');
   } catch (error) {

@@ -152,6 +152,48 @@ const challengeSchema = new mongoose.Schema({
     prerequisites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Challenge'
+    }],
+    challenge_type: {
+        type: String,
+        enum: ['regular', 'daily', 'weekly'],
+        default: 'regular'
+    },
+    schedule: {
+        start_date: Date,
+        end_date: Date,
+        repeat_pattern: {
+            type: String,
+            enum: ['daily', 'weekly', 'none'],
+            default: 'none'
+        }
+    },
+    participation_limit: {
+        type: Number,
+        default: 0 // 0 means unlimited
+    },
+    bonus_rewards: {
+        points: Number,
+        streak_multiplier: {
+            type: Number,
+            default: 1
+        },
+        special_badge: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Badge'
+        }
+    },
+    participants: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        status: {
+            type: String,
+            enum: ['registered', 'in_progress', 'completed', 'failed'],
+            default: 'registered'
+        },
+        started_at: Date,
+        completed_at: Date
     }]
 }, {
     timestamps: true
