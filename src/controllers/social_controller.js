@@ -250,7 +250,254 @@ const social_controller = {
         }
     },
 
-    // ... other controller functions
+    // Create activity
+    async create_activity(req, res) {
+        try {
+            const { type, content, privacy, reference } = req.body;
+            
+            const activity = new Activity({
+                user: req.user.user_id,
+                type,
+                content,
+                privacy,
+                reference
+            });
+
+            await activity.save();
+
+            res.status(201).json({
+                status: 'success',
+                data: { activity }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Update activity
+    async update_activity(req, res) {
+        try {
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            if (activity.user.toString() !== req.user.user_id) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Not authorized to update this activity'
+                });
+            }
+
+            const updated_activity = await Activity.findByIdAndUpdate(
+                req.params.id,
+                { $set: req.body },
+                { new: true }
+            );
+
+            res.json({
+                status: 'success',
+                data: { activity: updated_activity }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Like activity
+    async like_activity(req, res) {
+        try {
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            // Check if already liked
+            const already_liked = activity.interactions.likes
+                .some(like => like.user.toString() === req.user.user_id);
+
+            if (already_liked) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Activity already liked'
+                });
+            }
+
+            activity.interactions.likes.push({
+                user: req.user.user_id,
+                created_at: new Date()
+            });
+
+            await activity.save();
+
+            res.json({
+                status: 'success',
+                message: 'Activity liked successfully'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Add comment
+    async add_comment(req, res) {
+        try {
+            const { content } = req.body;
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            activity.interactions.comments.push({
+                user: req.user.user_id,
+                content,
+                created_at: new Date()
+            });
+
+            await activity.save();
+
+            res.status(201).json({
+                status: 'success',
+                message: 'Comment added successfully'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Share activity
+    async share_activity(req, res) {
+        try {
+            const activity = await Activity.findById(req.params.id);
+            
+            if (!activity) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Activity not found'
+                });
+            }
+
+            activity.interactions.shares.push({
+                user: req.user.user_id,
+                created_at: new Date()
+            });
+
+            await activity.save();
+
+            // Create new activity for the share
+            const share_activity = new Activity({
+                user: req.user.user_id,
+                type: 'share',
+                content: {
+                    title: `Shared: ${activity.content.title}`,
+                    description: req.body.comment || ''
+                },
+                reference: {
+                    model: 'Activity',
+                    id: activity._id
+                }
+            });
+
+            await share_activity.save();
+
+            res.status(201).json({
+                status: 'success',
+                message: 'Activity shared successfully'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Mark notification as read
+    async mark_notification_read(req, res) {
+        try {
+            const notification = await Notification.findById(req.params.id);
+            
+            if (!notification) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Notification not found'
+                });
+            }
+
+            if (notification.recipient.toString() !== req.user.user_id) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Not authorized to update this notification'
+                });
+            }
+
+            notification.is_read = true;
+            notification.read_at = new Date();
+            await notification.save();
+
+            res.json({
+                status: 'success',
+                message: 'Notification marked as read'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Mark all notifications as read
+    async mark_all_notifications_read(req, res) {
+        try {
+            await Notification.updateMany(
+                {
+                    recipient: req.user.user_id,
+                    is_read: false
+                },
+                {
+                    $set: {
+                        is_read: true,
+                        read_at: new Date()
+                    }
+                }
+            );
+
+            res.json({
+                status: 'success',
+                message: 'All notifications marked as read'
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    }
 };
 
 module.exports = social_controller; 
