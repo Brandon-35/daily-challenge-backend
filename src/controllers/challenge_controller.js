@@ -176,7 +176,7 @@ const challenge_controller = {
   // Delete challenge
   async delete_challenge(req, res) {
     try {
-      const challenge = await Challenge.findByIdAndDelete(req.params.id);
+      const challenge = await Challenge.findById(req.params.id);
       
       if (!challenge) {
         return res.status(404).json({
@@ -184,6 +184,8 @@ const challenge_controller = {
           message: 'Challenge not found'
         });
       }
+
+      await Challenge.findByIdAndDelete(req.params.id);
 
       res.json({
         status: 'success',
