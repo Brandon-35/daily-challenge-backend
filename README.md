@@ -32,31 +32,128 @@ backend/
 ### 1. User Management
 - User registration and authentication
 - Profile creation and management
-- Role-based access control
+- Role-based access control (user, editor, moderator, admin)
+- JWT authentication and authorization
+- Permission management system
 
-### 2. Challenge Tracking
-- Create, update, and delete personal challenges
-- Track progress in real-time
-- Set difficulty levels and categories
-- Recurrence and frequency management
+### 2. Challenge System
+- Create, update, and delete challenges
+- Challenge categories and difficulty levels
+- Challenge submission and evaluation
+- Real-time progress tracking
+- Daily and Weekly challenges
+- Challenge leaderboards
+- Personalized challenge recommendations
 
-### 3. Logging System
-- Daily activity logging
-- Mood and effort tracking
-- Detailed progress documentation
-- AI-powered insights generation
+### 3. Gamification System
+#### Points & Ranking
+- Point accumulation system
+- Global/Weekly/Monthly leaderboards
+- Dynamic user rankings
+- Season-based competitions
 
-### 4. Achievement System
-- Milestone tracking
-- Gamification elements
-- Dynamic achievement unlocking
-- Motivation through reward mechanisms
+#### Achievement System
+- Multiple achievement categories
+- Progressive achievement unlocking
+- Achievement tracking and rewards
+- Special event achievements
+- Achievement sharing
 
-### 5. AI-Powered Analytics
-- Performance analysis
-- Personalized recommendations
-- Trend identification
-- Predictive insights
+#### Badge System
+- Tiered badge progression
+- Category-specific badges
+- Special event badges
+- Badge progress tracking
+- Badge showcase features
+
+#### Streak System
+- Daily streak tracking
+- Streak milestone rewards
+- Streak multipliers
+- Streak recovery mechanics
+- Streak leaderboards
+
+### 4. Social Features
+#### Follow System
+- Follow/Unfollow functionality
+- Follower/Following management
+- Privacy settings
+- User discovery
+
+#### Activity Feed
+- Real-time activity updates
+- Achievement sharing
+- Challenge completion posts
+- Social interactions (likes, comments)
+- Custom activity filtering
+
+#### Notifications
+- Real-time notification system
+- Achievement notifications
+- Social interaction alerts
+- Challenge reminders
+- Custom notification preferences
+
+### 5. Core Models
+#### User Model
+- Authentication and profile data
+- Statistics and progress tracking
+- Achievement and badge collection
+- Social settings and preferences
+- Activity history
+
+#### Challenge Model
+- Challenge specifications
+- Participation tracking
+- Submission history
+- Performance metrics
+- Leaderboard integration
+
+#### Achievement/Badge Models
+- Unlock conditions
+- Progress tracking
+- Reward distribution
+- Collection management
+
+#### Activity/Notification Models
+- Social interaction tracking
+- User activity logging
+- Notification management
+- Privacy controls
+
+### 6. API Structure
+#### User Routes (/api/users)
+- Authentication endpoints
+- Profile management
+- User settings
+- Progress tracking
+
+#### Challenge Routes (/api/challenges)
+- Challenge CRUD operations
+- Submission handling
+- Leaderboard access
+- Daily/Weekly challenge management
+
+#### Social Routes (/api/social)
+- Follow system management
+- Activity feed operations
+- Notification handling
+- Social interaction endpoints
+
+#### Achievement Routes (/api/achievements)
+- Achievement tracking
+- Badge management
+- Progress monitoring
+- Reward distribution
+
+### 7. Planned Features
+- Learning Path System
+- Analytics & Reporting System
+- AI Integration for:
+  * Performance analysis
+  * Challenge recommendations
+  * Learning path optimization
+  * Personalized insights
 
 ## 🛠 Technologies Used
 - Node.js
