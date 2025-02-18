@@ -497,6 +497,75 @@ const social_controller = {
                 message: error.message
             });
         }
+    },
+
+    // Update privacy settings
+    async update_privacy_settings(req, res) {
+        try {
+            const user = await User.findById(req.user.user_id);
+            
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'User not found'
+                });
+            }
+
+            // Update privacy settings
+            user.social_settings.profile_visibility = req.body.profile_visibility || user.social_settings.profile_visibility;
+            user.social_settings.activity_visibility = req.body.activity_visibility || user.social_settings.activity_visibility;
+            user.social_settings.allow_follows = req.body.allow_follows !== undefined ? req.body.allow_follows : user.social_settings.allow_follows;
+
+            await user.save();
+
+            res.json({
+                status: 'success',
+                message: 'Privacy settings updated successfully',
+                data: {
+                    privacy_settings: user.social_settings
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+    // Update notification preferences
+    async update_notification_preferences(req, res) {
+        try {
+            const user = await User.findById(req.user.user_id);
+            
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'User not found'
+                });
+            }
+
+            // Update notification preferences
+            user.social_settings.notification_preferences = {
+                ...user.social_settings.notification_preferences,
+                ...req.body
+            };
+
+            await user.save();
+
+            res.json({
+                status: 'success',
+                message: 'Notification preferences updated successfully',
+                data: {
+                    notification_preferences: user.social_settings.notification_preferences
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
     }
 };
 
