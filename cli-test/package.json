@@ -1,0 +1,15 @@
+{
+  "name": "prodigy-cli-test",
+  "version": "1.0.0",
+  "description": "CLI testing tool for Prodigy API",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js",
+    "test:dev": "NODE_ENV=development node index.js",
+    "test:prod": "NODE_ENV=production node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1"
+  }
+} 

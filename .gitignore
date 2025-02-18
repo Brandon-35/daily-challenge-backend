@@ -3,3 +3,8 @@ node_modules
 .DS_Store
 logs
 *.log
+
+# CLI Test
+cli-test/node_modules
+cli-test/.env
+cli-test/test-results.log
