@@ -5,12 +5,12 @@ module.exports = {
     TOKEN: null, // Will be set after login
     TEST_CHALLENGE_ID: null, // Will be set after creating challenge
     ADMIN_CREDENTIALS: {
-        username: 'admin_test',
-        email: 'admin_test@example.com',
+        username: 'admin_user',
+        email: 'admin@example.com',
         password: 'Admin@123',
         confirm_password: 'Admin@123',
         first_name: 'Admin',
-        last_name: 'Test',
+        last_name: 'User',
         role: 'admin'
     },
     

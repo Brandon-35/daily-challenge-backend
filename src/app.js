@@ -85,14 +85,12 @@ app.get('/database_status', async (req, res) => {
 
 // Routes
 app.use('/api/users', user_routes);
+app.use('/api/social', social_routes);
+app.use('/api', challenge_routes);
 
 // Initialize socket
 const server = http.createServer(app);
 const io = socket_service.init(server);
-
-// Add routes
-app.use('/api/social', social_routes);
-app.use('/api', challenge_routes);
 
 // 404 Not Found middleware
 app.use((req, res, next) => {
@@ -145,6 +143,13 @@ const start_server = async () => {
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log('Routes:');
+      const routes = [
+        '/api/users - User routes',
+        '/api/social - Social routes',
+        '/api - Challenge routes'
+      ];
+      routes.forEach(route => console.log(route));
     });
   } catch (error) {
     console.error('Error starting server:', error);

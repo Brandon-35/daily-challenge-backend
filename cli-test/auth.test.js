@@ -3,7 +3,7 @@ const config = require('./config');
 const jwt = require('jsonwebtoken');
 
 const auth_test = {
-    // Test đăng ký user mới
+    // Test registering a new user
     async test_register() {
         try {
             const response = await axios.post(`${config.API_URL}/users/register`, {
@@ -19,14 +19,14 @@ const auth_test = {
         }
     },
 
-    // Test đăng nhập
+    // Test logging in
     async test_login() {
         try {
             const response = await axios.post(`${config.API_URL}/users/login`, {
                 email: 'test@example.com',
                 password: 'Test123!'
             });
-            config.TOKEN = response.data.token; // Lưu token để dùng cho các test khác
+            config.TOKEN = response.data.token; // Save token for use in other tests
             console.log('✅ Login Test:', response.data);
         } catch (error) {
             console.error('❌ Login Test Failed:', error.response?.data || error.message);
@@ -41,13 +41,14 @@ const auth_test = {
                     email: config.ADMIN_CREDENTIALS.email,
                     password: config.ADMIN_CREDENTIALS.password
                 });
-                
+                console.log('Login Response:', login_response.data);
                 if (login_response.data.token) {
                     console.log('ℹ️ Admin user already exists, using existing account');
                     config.TOKEN = login_response.data.token;
                     return login_response.data;
                 }
             } catch (login_error) {
+                console.log('Login Error:', login_error);
                 // If login fails, proceed with registration
                 console.log('ℹ️ Admin login failed, proceeding with registration');
             }
@@ -81,7 +82,7 @@ const auth_test = {
                 password: config.ADMIN_CREDENTIALS.password
             });
 
-            // Log response để debug
+            // Log response for debugging
             console.log('Login Response:', response.data);
             console.log('User Role:', response.data.data.user.role);
 

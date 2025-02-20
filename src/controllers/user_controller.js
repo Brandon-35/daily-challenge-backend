@@ -96,11 +96,11 @@ const user_controller = {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email });
-
+  
       if (!user) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid credentials'
+          message: 'User not found. Please check your email.'
         });
       }
 
@@ -108,7 +108,7 @@ const user_controller = {
       if (!is_valid) {
         return res.status(401).json({
           status: 'error',
-          message: 'Invalid credentials'
+          message: 'Incorrect password. Please try again.'
         });
       }
 
@@ -181,8 +181,17 @@ const user_controller = {
   async change_password(req, res) {
     try {
       const { current_password, new_password } = req.body;
-      
+
+      // Validate input
+      if (!current_password || !new_password) {
+        return res.status(400).json({ message: 'Current password and new password are required' });
+      }
+
       const user = await User.findById(req.user.user_id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
       const is_match = await user.compare_password(current_password);
       
       if (!is_match) {
@@ -202,7 +211,25 @@ const user_controller = {
   async create_user(req, res) {
     try {
       const { username, email, password, first_name, last_name, role } = req.body;
-      
+
+      // Check if the email already exists
+      const existing_email_user = await User.findOne({ email });
+      if (existing_email_user) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email already exists'
+        });
+      }
+
+      // Check if the username already exists
+      const existing_username_user = await User.findOne({ username });
+      if (existing_username_user) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Username already exists'
+        });
+      }
+
       const user = new User({
         username,
         email,

@@ -1,4 +1,4 @@
-const User = require('../models/User');
+
 
 const check_role = (allowed_roles, required_capability) => {
     return (req, res, next) => {

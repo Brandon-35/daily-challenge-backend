@@ -56,10 +56,11 @@ async function seed_challenges(admin) {
 }
 
 async function create_admin_user() {
+    const salt = await bcrypt.genSalt(10);
     const admin = await User.create({
         username: 'admin_user',
         email: 'admin@example.com',
-        password: await bcrypt.hash('Admin@123', 10),
+        password: await bcrypt.hash('Admin@123', salt),
         first_name: 'Admin',
         last_name: 'User',
         role: 'admin',
@@ -385,14 +386,13 @@ async function seed_database() {
                 }
             }
         ]);
-
         console.log('\n📅 Seeded Daily/Weekly Challenges:');
         console.table(daily_weekly_challenges.map(challenge => ({
             title: challenge.title,
             type: challenge.challenge_type,
             difficulty: challenge.difficulty,
             points: challenge.points,
-            bonus: challenge.bonus_rewards.points,
+            bonus: challenge.bonus_rewards ? challenge.bonus_rewards.points : 0, // Added check for bonus_rewards
             ends: challenge.end_date
         })));
 
